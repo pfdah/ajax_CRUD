@@ -1,0 +1,195 @@
+﻿
+@{
+    ViewBag.Title = "Index";
+}
+
+<h2>Index</h2>
+<div class="col-md-12">
+    <div class="col-md-4">
+        <p>
+
+        </p>
+    </div>
+    <div class="col-md-4 center">
+        <input type="hidden" id="stId" value="0" />
+        <div class="col-md-12 ">
+            <label>Name: </label>
+            <input type="text" class="form form-control" id="stName" required />
+        </div>
+        <div class="col-md-12">
+            <label>Class: </label>
+            <input type="number" class="form form-control" id="stClass" required />
+        </div>
+        <div class="col-md-12">
+            <label>Roll: </label>
+            <input type="number" class="form form-control" id="stRoll" required />
+        </div>
+        <br />
+        <div class="col-md-12">
+            <label>IsGood: </label>
+            <input type="checkbox" class="form-control" id="stIsGood" required />
+        </div>
+        <div class="col-md-12">
+            <br />
+            <input id="btnSave" class="btn btn-success" type="button" value="Save Data" />
+            <input id="btnClear" class="btn btn-danger" type="button" value="Clear" />
+        </div>
+    </div>
+    <div class="col-md-4">
+        <p>
+
+        </p>
+    </div>
+    <div class="col-md-12">
+        <table id="stdTable" class=" table table-striped table-bordered" width="100%">
+            <thead>
+                <tr>
+                    <th hidden="hidden">StId</th>
+                    <th>Sn.</th>
+                    <th>Name</th>
+                    <th>Class</th>
+                    <th>Roll</th>
+                    <th>IsGood</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody class="tbody">
+            </tbody>
+        </table>
+    </div>
+</div>
+<script type="text/javascript">
+    $(document).ready(function () {
+        clear();
+        loadData();
+        function isEmptyOrSpaces(str) {
+            return str === null || str.match(/^ *$/) !== null;
+        }
+        $("#btnSave").click(function () {
+            var id = $("#stId").val();
+            var name = $("#stName").val();
+            var classes = $("#stClass").val();
+            classes.trim();
+            var roll = $("#stRoll").val();
+            roll.trim();
+            var isGood = $("#stIsGood").prop("checked");
+            if (isEmptyOrSpaces(name)) {
+                toastr.error("Name is required.");
+                return false;
+            }
+            else if (isEmptyOrSpaces(classes)) {
+                toastr.error("Class must be number");
+                return false;
+            }
+            else if (isEmptyOrSpaces(roll)) {
+                toastr.error("Roll must be number");
+                return false;
+            }
+            else {
+                $.ajax({
+                    url: '@Url.Action("SaveData","Student")',
+                    type: 'POST',
+                    data: JSON.stringify({ "Id": id, "Name": name, "Class": classes, "Roll": roll, "IsGood": isGood }),
+                    dataType: "JSON",
+                    contentType: "application/JSON; charset=utf-8",
+                    success: function (result) {
+                        toastr.success("Successfully saved");
+                        clear();
+                        loadData();
+                        $("#btnSave").html("Save Data");
+                    },
+                    error: function (errormessage) {
+                        toastr.error("Unable to save data");
+                    }
+                });
+
+            }
+
+        });       
+
+        $("#btnClear").click(function () {
+            clear();
+        });
+        
+        function loadData() {
+            $.ajax({
+                url: '@Url.Action("GetStudents","Student")',
+                type: "GET",
+                dataType: "JSON",
+                contentType: "application/json;charset=utf-8",
+                success: function (result) {
+                    var html = '';
+                    var count = 1;
+                    $.each(result, function (key, item) {
+                        html += '<tr>';
+                        html += '<td hidden="hidden">' + item.Id + '</td>';
+                        html += '<td>' + count + '</td>';
+                        html += '<td>' + item.Name + '</td>';
+                        html += '<td>' + item.Class + '</td>';
+                        html += '<td>' + item.Roll + '</td>';
+                        html += '<td>' + item.IsGood + '</td>';
+                        html += '<td><button class="btn btn-warning" onclick="getById('+item.Id+')">Edit</button> | <button class="btn btn-danger" onclick="Delete(' + item.Id + ')">Delete</button></td>';
+                        html += '</tr>';
+                        count += 1;
+                    });
+                    $(".tbody").html(html);
+                    clear();
+                },
+                error: function (errormessage) {
+                    toastr.error("We couldn't load data");
+
+                }
+            });
+        }
+        
+    });
+    function getById(id) {
+        $.ajax({
+            url: '/Student/GetStudentById/' + id,
+            type: "GET",
+            dataType: "JSON",
+            contentType: "application/json;charset=UTF-8",
+            success: function (result) {
+                $("#stId").val(result.Id)
+                $("#stName").val(result.Name);
+                $("#stClass").val(result.Class);
+                $("#stRoll").val(result.Roll);
+                $("#stIsGood").prop("checked", result.IsGood);
+                toastr("Record Found");
+                clear();
+            },
+            error: function (errormessage) {
+                toastr.error("Unable to find record");
+            }
+        });
+    }
+    function clear() {
+        $("#stId").val(0);
+        $("#stName").val("");
+        $("#stClass").val("");
+        $("#stRoll").val("");
+        $("#stIsGood").prop("checked", false);
+    }
+    function Delete(id) {
+        var ans = confirm("Are you sure you want to delete this record?");
+        if (ans) {
+            $.ajax({
+                url: '/Student/Delete/' + id,
+                type: "POST",
+                dataType: "JSON",
+                contentType: "application/json;charset=UTF-8",
+                success: function (result) {
+                    toastr.success("Deleted");
+                    clear();
+                    loadData();
+                },
+                error: function (errormessage) {
+                    toastr.success("Delete unsuccessful");
+                }
+            });
+        }
+        
+    }
+    
+
+</script>
